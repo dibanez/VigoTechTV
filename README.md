@@ -15,6 +15,7 @@ Built for [VigoTech](https://vigotech.org) community events.
 - **Configurable quality** - Resolution, frame rate and bitrate settings
 - **YouTube upload** - Direct upload via OAuth2 (public, unlisted or private)
 - **Automatic subtitles** - On-demand speech-to-text with local Whisper (transformers.js, runs in the browser; audio never leaves the device). From the preview, generate subtitles for a recording, download them as .srt/.vtt, and upload them to YouTube as captions. Language and model quality are configurable in Options.
+- **Meetup summary (acta)** - Generate a Markdown summary from the transcript: locally with an in-browser LLM (Qwen2.5 via transformers.js; WebGPU when available, WASM otherwise) or via the OpenAI API for higher quality. Produces a summary, key points, mentioned tools and links — ready to publish alongside the video.
 - **Local storage** - Recordings saved to IndexedDB for later playback
 - **Keyboard shortcut** - Ctrl+Space to stop recording from any tab
 
@@ -88,6 +89,20 @@ Language and model quality (`tiny` / `base` / `small`) are configurable in **Opt
 
 > **Note:** Live transcription (Web Speech API) is intentionally not used. During a recording, `getUserMedia` holds the microphone in the offscreen document and Chrome denies `webkitSpeechRecognition` with `not-allowed` (the mic cannot be shared in the same document). Transcribing the recorded audio afterwards avoids the conflict and works for screen, tab and camera recordings alike.
 
+### Meetup summary (local LLM)
+
+Once a recording has subtitles, the **Subtitles** panel also offers **Generar resumen (IA local)**: it feeds the transcript to a small instruct model (Qwen2.5) running locally with transformers.js and produces a Markdown "acta".
+
+- Sections: summary, key points, mentioned tools/projects, links
+- **Two providers**, selectable in Options:
+  - **Local** (default): Qwen2.5 in-browser, uses WebGPU when available (else WASM); the transcript never leaves the device
+  - **OpenAI API**: higher quality; requires your own API key and **sends the transcript to OpenAI**. The key is stored only on this device (`chrome.storage.local`, not synced)
+- The local model is downloaded once and cached
+- Download the result as **.md** or copy it to the clipboard; results are cached per recording
+- Enable/disable, choose provider, local model (0.5B/1.5B) and OpenAI model in **Options**
+
+For long recordings the transcript is summarized in chunks and then consolidated (map-reduce), so quality and speed depend on the chosen model and on whether WebGPU is available.
+
 ## Project Structure
 
 ```
@@ -98,8 +113,9 @@ VigoTechTV/
 ├── preview.html                   # Recording playback & upload
 ├── preview/
 │   ├── preview.js                 # Video player logic (opens newest recording)
-│   ├── preview.subtitles.js       # Subtitles panel (generate/download/upload)
+│   ├── preview.subtitles.js       # Subtitles + summary panel (generate/download/upload)
 │   ├── preview.whisper.js         # Local Whisper transcription (ES module)
+│   ├── preview.summary.js         # Local LLM meetup summary (ES module)
 │   ├── preview.php.upload.js      # Private server upload
 │   └── preview.youtube.upload.js  # YouTube upload (OAuth2) + captions
 ├── offscreen.html/js              # Recording engine (media APIs)

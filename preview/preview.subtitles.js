@@ -37,7 +37,18 @@
         '<a href="#" id="subtitles-vtt" style="color:red;text-decoration:underline;cursor:pointer;">⬇ .vtt</a>' +
         '</div>' +
         '<div id="subtitles-progress" style="display:none;color:#666;font-size:12px;margin-top:6px;"></div>' +
-        '<div id="subtitles-status" style="color:green;font-size:12px;margin-top:6px;"></div>';
+        '<div id="subtitles-status" style="color:green;font-size:12px;margin-top:6px;"></div>' +
+        '<div id="summary-box" style="display:none;border-top:1px solid #eee;margin-top:8px;padding-top:8px;">' +
+        '<button id="summary-generate" style="cursor:pointer;padding:4px 10px;border:1px solid #06c;background:#fff;color:#06c;border-radius:3px;">Generar resumen (IA local)</button>' +
+        '<div id="summary-progress" style="display:none;color:#666;font-size:12px;margin-top:6px;"></div>' +
+        '<textarea id="summary-text" readonly style="display:none;width:296px;height:150px;margin-top:8px;font-size:12px;font-family:monospace;"></textarea>' +
+        '<div id="summary-actions" style="display:none;margin-top:6px;">' +
+        '<a href="#" id="summary-md" style="color:#06c;text-decoration:underline;cursor:pointer;margin-right:12px;">⬇ .md</a>' +
+        '<a href="#" id="summary-copy" style="color:#06c;text-decoration:underline;cursor:pointer;margin-right:12px;">Copiar</a>' +
+        '<a href="#" id="summary-regen" style="color:#999;text-decoration:underline;cursor:pointer;">Regenerar</a>' +
+        '</div>' +
+        '<div id="summary-status" style="color:green;font-size:12px;margin-top:6px;"></div>' +
+        '</div>';
     (document.body || document.documentElement).appendChild(panel);
 
     var btnGenerate = document.getElementById('subtitles-generate');
@@ -45,14 +56,34 @@
     var progressBox = document.getElementById('subtitles-progress');
     var statusBox = document.getElementById('subtitles-status');
 
-    // Transcription settings (set defaults; refreshed from storage below).
-    var settings = { lang: 'es-ES', size: 'base', enabled: true };
+    var summaryBox = document.getElementById('summary-box');
+    var btnSummary = document.getElementById('summary-generate');
+    var summaryProgress = document.getElementById('summary-progress');
+    var summaryText = document.getElementById('summary-text');
+    var summaryActions = document.getElementById('summary-actions');
+    var summaryStatus = document.getElementById('summary-status');
+
+    // Transcription / summary settings (defaults; refreshed from storage below).
+    var settings = {
+        lang: 'es-ES', size: 'base', enabled: true,
+        summaryEnabled: true, summaryModel: 'small',
+        summaryProvider: 'local', openaiModel: 'gpt-4o-mini', openaiApiKey: ''
+    };
     if (typeof chrome !== 'undefined' && chrome.storage) {
         chrome.storage.sync.get(null, function(items) {
             if (items['transcriptionLang']) settings.lang = items['transcriptionLang'];
             if (items['transcriptionModel']) settings.size = items['transcriptionModel'];
             settings.enabled = (typeof items['enableTranscription'] === 'undefined') ||
                 items['enableTranscription'] === 'true';
+            settings.summaryEnabled = (typeof items['enableSummary'] === 'undefined') ||
+                items['enableSummary'] === 'true';
+            if (items['summaryModel']) settings.summaryModel = items['summaryModel'];
+            if (items['summaryProvider']) settings.summaryProvider = items['summaryProvider'];
+            if (items['openaiModel']) settings.openaiModel = items['openaiModel'];
+        });
+        // API key lives in local storage (secret, not synced).
+        chrome.storage.local.get('openaiApiKey', function(items) {
+            if (items['openaiApiKey']) settings.openaiApiKey = items['openaiApiKey'];
         });
     }
 
@@ -99,6 +130,8 @@
         progressBox.style.display = 'none';
         linksBox.style.display = 'block';
         panel.style.display = 'block';
+        // The summary needs a transcript, so it only appears in this state.
+        loadSummaryUI();
     }
 
     function showGenerateButton() {
@@ -111,11 +144,49 @@
         linksBox.style.display = 'none';
         progressBox.style.display = 'none';
         statusBox.textContent = '';
+        summaryBox.style.display = 'none';
         panel.style.display = 'block';
     }
 
     function hidePanel() {
         panel.style.display = 'none';
+        summaryBox.style.display = 'none';
+    }
+
+    // --- Summary (local LLM) ---
+
+    function showSummaryReady(md) {
+        summaryText.value = md;
+        summaryText.style.display = 'block';
+        summaryActions.style.display = 'block';
+        summaryProgress.style.display = 'none';
+        btnSummary.style.display = 'none';
+        summaryStatus.textContent = '';
+    }
+
+    function showSummaryButton(label) {
+        btnSummary.style.display = 'inline-block';
+        btnSummary.disabled = false;
+        btnSummary.textContent = label || 'Generar resumen (IA local)';
+        summaryText.style.display = 'none';
+        summaryActions.style.display = 'none';
+        summaryProgress.style.display = 'none';
+    }
+
+    // Show the summary section for the current recording (cached or button).
+    function loadSummaryUI() {
+        if (!settings.summaryEnabled) { summaryBox.style.display = 'none'; return; }
+        summaryBox.style.display = 'block';
+        summaryStatus.textContent = '';
+        if (!window.file) { showSummaryButton(); return; }
+
+        DiskStorage.Fetch(window.file.name + '.summary', function(md) {
+            if (md && md !== 'success' && typeof md === 'string' && md.length) {
+                showSummaryReady(md);
+            } else {
+                showSummaryButton();
+            }
+        });
     }
 
     function setProgress(text) {
@@ -188,6 +259,97 @@
             setProgress('');
             statusBox.style.color = '#b00';
             statusBox.textContent = 'Error: ' + (err && err.message ? err.message : err);
+        });
+    };
+
+    function runSummary() {
+        if (!window.__currentTranscript || !window.__currentTranscript.cues.length) {
+            summaryStatus.style.color = '#b00';
+            summaryStatus.textContent = 'Primero genera los subtítulos.';
+            return;
+        }
+        if (!window.VigoSummary || !window.VigoSummary.available) {
+            summaryStatus.style.color = '#b00';
+            summaryStatus.textContent = 'El motor de resumen no se cargó.';
+            return;
+        }
+        if (settings.summaryProvider === 'openai' && !settings.openaiApiKey) {
+            summaryStatus.style.color = '#b00';
+            summaryStatus.textContent = 'Configura tu API key de OpenAI en Opciones.';
+            return;
+        }
+
+        var currentName = window.file.name;
+        var title = (window.file.item && window.file.item.display) || baseName();
+        var text = window.__currentTranscript.cues.map(function(c) { return c.text; }).join(' ');
+
+        btnSummary.disabled = true;
+        btnSummary.style.display = 'inline-block';
+        btnSummary.textContent = 'Generando…';
+        summaryActions.style.display = 'none';
+        summaryText.style.display = 'none';
+        summaryStatus.style.color = 'green';
+        summaryStatus.textContent = '';
+        summaryProgress.style.display = 'block';
+        summaryProgress.textContent = 'Preparando…';
+
+        var usingOpenAI = settings.summaryProvider === 'openai';
+
+        window.VigoSummary.generate(text, {
+            provider: settings.summaryProvider,
+            lang: settings.lang,
+            model: settings.summaryModel,
+            openaiModel: settings.openaiModel,
+            apiKey: settings.openaiApiKey,
+            title: title,
+            onProgress: function(p) {
+                if (p.stage === 'model') {
+                    summaryProgress.textContent = typeof p.progress === 'number'
+                        ? 'Descargando modelo… ' + Math.round(p.progress) + '%'
+                        : 'Cargando modelo…';
+                } else if (p.stage === 'map') {
+                    summaryProgress.textContent = 'Analizando transcripción… (' + (p.index + 1) + '/' + p.total + ')';
+                } else if (p.stage === 'reduce') {
+                    summaryProgress.textContent = usingOpenAI ? 'Generando con OpenAI…' : 'Redactando el acta…';
+                } else if (p.stage === 'done') {
+                    summaryProgress.textContent = '';
+                }
+            }
+        }).then(function(md) {
+            DiskStorage.Store({ key: currentName + '.summary', value: md }, function() {
+                if (window.file && window.file.name === currentName) {
+                    showSummaryReady(md);
+                    summaryStatus.style.color = 'green';
+                    summaryStatus.textContent = '✓ Resumen generado' +
+                        (window.VigoSummary.device ? ' (' + window.VigoSummary.device + ')' : '');
+                }
+            });
+        }).catch(function(err) {
+            console.error('Summary generation failed:', err);
+            showSummaryButton('Reintentar');
+            summaryStatus.style.color = '#b00';
+            summaryStatus.textContent = 'Error: ' + (err && err.message ? err.message : err);
+        });
+    }
+
+    btnSummary.onclick = runSummary;
+    document.getElementById('summary-regen').onclick = function(e) {
+        e.preventDefault();
+        runSummary();
+    };
+    document.getElementById('summary-md').onclick = function(e) {
+        e.preventDefault();
+        if (summaryText.value) download(baseName() + '.md', summaryText.value, 'text/markdown');
+    };
+    document.getElementById('summary-copy').onclick = function(e) {
+        e.preventDefault();
+        if (!summaryText.value) return;
+        navigator.clipboard.writeText(summaryText.value).then(function() {
+            summaryStatus.style.color = 'green';
+            summaryStatus.textContent = 'Copiado al portapapeles';
+        }).catch(function() {
+            summaryText.select();
+            document.execCommand('copy');
         });
     };
 

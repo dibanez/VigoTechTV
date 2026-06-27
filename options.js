@@ -79,6 +79,28 @@ chrome.storage.sync.get(null, function(items) {
     if (items['transcriptionModel']) {
         document.getElementById('transcriptionModel').value = items['transcriptionModel'];
     }
+
+    document.getElementById('enableSummary').checked =
+        (typeof items['enableSummary'] === 'undefined') || items['enableSummary'] === 'true';
+
+    if (items['summaryModel']) {
+        document.getElementById('summaryModel').value = items['summaryModel'];
+    }
+
+    if (items['summaryProvider']) {
+        document.getElementById('summaryProvider').value = items['summaryProvider'];
+    }
+
+    if (items['openaiModel']) {
+        document.getElementById('openaiModel').value = items['openaiModel'];
+    }
+});
+
+// API key is a secret: keep it in local storage (not synced across devices).
+chrome.storage.local.get('openaiApiKey', function(items) {
+    if (items['openaiApiKey']) {
+        document.getElementById('openaiApiKey').value = items['openaiApiKey'];
+    }
 });
 
 // Load logo preview from local storage
@@ -341,4 +363,51 @@ document.getElementById('transcriptionModel').onchange = function() {
         document.getElementById('transcriptionModel').disabled = false;
         hideSaving();
     });
+};
+
+document.getElementById('enableSummary').onchange = function() {
+    showSaving();
+    chrome.storage.sync.set({
+        enableSummary: this.checked ? 'true' : 'false'
+    }, hideSaving);
+};
+
+document.getElementById('summaryModel').onchange = function() {
+    this.disabled = true;
+    showSaving();
+    chrome.storage.sync.set({
+        summaryModel: this.value || 'small'
+    }, function() {
+        document.getElementById('summaryModel').disabled = false;
+        hideSaving();
+    });
+};
+
+document.getElementById('summaryProvider').onchange = function() {
+    this.disabled = true;
+    showSaving();
+    chrome.storage.sync.set({
+        summaryProvider: this.value || 'local'
+    }, function() {
+        document.getElementById('summaryProvider').disabled = false;
+        hideSaving();
+    });
+};
+
+document.getElementById('openaiModel').onchange = function() {
+    this.disabled = true;
+    showSaving();
+    chrome.storage.sync.set({
+        openaiModel: this.value || 'gpt-4o-mini'
+    }, function() {
+        document.getElementById('openaiModel').disabled = false;
+        hideSaving();
+    });
+};
+
+document.getElementById('openaiApiKey').onchange = function() {
+    showSaving();
+    chrome.storage.local.set({
+        openaiApiKey: this.value.trim()
+    }, hideSaving);
 };

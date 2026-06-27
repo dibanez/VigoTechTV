@@ -31,7 +31,8 @@ html, body {
   background-color: white;
   font-family: Custom_Font!important;
   font-size: 1em;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 label, input {
@@ -107,7 +108,7 @@ td {
 
 article {
     width: 800px;
-    margin: 0 auto;
+    margin: 0 auto 30px;
     border: 1px solid black;
     border-top: 0;
     border-bottom-left-radius: 5px;
@@ -284,6 +285,79 @@ h1 {
             <small style="display:inline-block;margin-top:6px;color:#666;">
                 El modelo se descarga una sola vez y queda en caché.
             </small>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            Resumen / acta del meetup:
+        </td>
+
+        <td>
+            <label><input type="checkbox" id="enableSummary" checked> Permitir generar un acta en Markdown (IA local)</label>
+            <br>
+            <small style="display:inline-block;margin-top:6px;color:#666;">
+                A partir de los subtítulos, genera un resumen con puntos clave, herramientas y enlaces.
+                Corre en el navegador (el modelo se descarga una vez). Usa WebGPU si está disponible.
+            </small>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            Proveedor del resumen:
+        </td>
+
+        <td>
+            <select id="summaryProvider">
+                <option value="local" selected>Local (en el navegador, privado)</option>
+                <option value="openai">OpenAI API (mejor calidad, de pago)</option>
+            </select>
+            <br>
+            <small style="display:inline-block;margin-top:6px;color:#666;">
+                Con OpenAI, la transcripción se envía a sus servidores. Con "Local" no sale del equipo.
+            </small>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            Modelo (Local):
+        </td>
+
+        <td>
+            <select id="summaryModel">
+                <option value="small" selected>Rápido (Qwen2.5 0.5B)</option>
+                <option value="large">Preciso (Qwen2.5 1.5B, más lento/pesado)</option>
+            </select>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            OpenAI API key:
+        </td>
+
+        <td>
+            <input type="password" id="openaiApiKey" placeholder="sk-..." autocomplete="off" style="width:280px;padding:3px 5px;border:1px dotted black;border-radius:3px;">
+            <br>
+            <small style="display:inline-block;margin-top:6px;color:#666;">
+                Se guarda solo en este equipo (no se sincroniza). Solo se usa si el proveedor es OpenAI.
+            </small>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            Modelo (OpenAI):
+        </td>
+
+        <td>
+            <select id="openaiModel">
+                <option value="gpt-4o-mini" selected>gpt-4o-mini (barato)</option>
+                <option value="gpt-4o">gpt-4o (mejor)</option>
+                <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+            </select>
         </td>
     </tr>
 
