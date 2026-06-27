@@ -1,133 +1,153 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 <style>
 * {
   -webkit-user-select: none;
-  -user-select: none;
-  -webkit-user-drag: none;
-  -user-drag: none;
+  user-select: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 @font-face {
   font-family: 'Custom_Font';
-  src: local('.SFNSText-Light'), 
-       local('.HelveticaNeueDeskInterface-Light'), 
-       local('.LucidaGrandeUI'), 
-       local('Ubuntu Light'), 
+  src: local('.SFNSText-Light'),
+       local('.HelveticaNeueDeskInterface-Light'),
+       local('.LucidaGrandeUI'),
+       local('Ubuntu Light'),
        local('Segoe UI Light'),
-       local('Roboto-Light'), 
-       local('DroidSans'), 
+       local('Roboto-Light'),
+       local('DroidSans'),
        local('Tahoma');
 }
-* {
-  margin: 0;
-  padding: 0;
-}
 html, body {
-  width: 350px;
+  width: 320px;
   background-color: #F3F3F3;
-  font-family: Custom_Font!important;
-  font-size: 1em;
-  overflow: hidden;
+  font-family: Custom_Font, sans-serif;
+  font-size: 14px;
+}
+.header {
+  background: #2c3e50;
+  color: white;
+  padding: 10px 14px;
+  font-size: 16px;
+  font-weight: bold;
+}
+.section {
+  padding: 10px 14px;
+}
+.section-title {
+  font-size: 12px;
+  color: #777;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.radio-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.radio-group label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.toggle-list {
+  list-style: none;
+}
+.toggle-list li {
+  padding: 5px 0;
+}
+.toggle-list label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 hr {
   border: 0;
-  border-top: solid lightgray 1px;
+  border-top: 1px solid #ddd;
 }
-div {
-  padding: 4px 8px;
-}
-div.btn {
-  text-decoration: none;
-  outline: none;
-  border: 0;
-  font-size: inherit;
+.btn-record {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  font-size: 15px;
+  font-weight: bold;
+  color: white;
+  background: #e74c3c;
+  border: none;
   cursor: pointer;
+  text-align: center;
 }
-div.btn:hover {
-  color: #ffffff;
-  background: #3cb0fd;
-  background-image: -webkit-linear-gradient(top, #3cb0fd, #3498db);
-  background-image: -moz-linear-gradient(top, #3cb0fd, #3498db);
-  background-image: -ms-linear-gradient(top, #3cb0fd, #3498db);
-  background-image: -o-linear-gradient(top, #3cb0fd, #3498db);
-  background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
-  text-decoration: none;
+.btn-record:hover {
+  background: #c0392b;
 }
-a {
-  outline: none;
-  text-decoration: none;
+.btn-record.stop {
+  background: #555;
+}
+.btn-record.stop:hover {
+  background: #333;
+}
+.footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 14px;
+}
+.footer a {
   color: #0C97BB;
+  text-decoration: none;
+  font-size: 13px;
 }
-div.btn img {
-  height: 32px;
-}
-section {
-  margin-right: 15px;
-  text-align: right;
-  width: 24px;
-  display: inline-block;
-  vertical-align: middle;
+.footer a:hover {
+  text-decoration: underline;
 }
 </style>
-<title>RecordRTC Extension</title>
+<title>VigoTechTV</title>
 </head>
 <body>
+    <div class="header">VigoTechTV</div>
+
     <article id="default-section">
-        <div class="btn" id="microphone-screen-camera">
-            <section><img src="images/logos/php_vigo.jpg"></section>
-            Record Meetup PHPVigo
+        <div class="section">
+            <div class="section-title">Source</div>
+            <div class="radio-group">
+                <label><input type="radio" name="source" value="screen" checked> Screen</label>
+                <label><input type="radio" name="source" value="tab"> Chrome Tab</label>
+            </div>
         </div>
+
         <hr>
-        <div class="btn" id="microphone-screen-camera-python">
-            <section><img src="images/logos/python_vigo.png"></section>
-            Record Meetup PythonVigo
+
+        <div class="section">
+            <div class="section-title">Options</div>
+            <ul class="toggle-list">
+                <li><label><input type="checkbox" id="opt-mic"> Microphone</label></li>
+                <li><label><input type="checkbox" id="opt-camera"> Camera (PiP)</label></li>
+                <li><label><input type="checkbox" id="opt-speakers"> System audio</label></li>
+            </ul>
         </div>
+
         <hr>
-      <div class="btn" id="full-screen">
-          <section><img src="images/main-icon.png"></section>
-          Screen Only (without audio)
-      </div>
-      <hr>
-      <div class="btn" id="microphone-screen">
-          <section><img src="images/main-icon.png"></section>
-          Screen + Microphone
-      </div>
-      <hr>
-      <div class="btn" id="full-screen-audio">
-          <section><img src="images/main-icon.png"></section>
-          Screen + Speakers
-      </div>
-      <hr>
-      <div class="btn" id="full-screen-microphone-audio">
-          <section><img src="images/main-icon.png"></section>
-          Screen + Microphone + Speakers
-      </div>
-      <hr>
-      <div class="btn" id="selected-tab">
-          <section><img src="images/main-icon.png"></section>
-          Chrome Tab
-      </div>
-      <hr>
-      <div class="btn" id="selected-tab-audio-only">
-          <section><img src="images/main-icon.png"></section>
-          Chrome Tab (Audio Only)
-      </div>
-      <hr>
-      <div style="float: right;">
-        <a href="preview.html" target="_blank">See All Recordings</a>
-      </div>
-      <div>
-        <a id="btn-options" href="options.html" target="_blank">Options</a>
-      </div>
+
+        <div class="section">
+            <button class="btn-record" id="btn-start">Start Recording</button>
+        </div>
     </article>
 
-    <article id="stop-section">
-      <div class="btn" id="stop-recording">
-          <section><img src="images/recordRTC-progress-1.png"></section>
-          Stop Recording
-      </div>
+    <article id="stop-section" style="display:none;">
+        <div class="section">
+            <button class="btn-record stop" id="btn-stop">Stop Recording</button>
+        </div>
     </article>
+
+    <hr>
+
+    <div class="footer">
+        <a href="preview.html" target="_blank">Recordings</a>
+        <a id="btn-options" href="options.html" target="_blank">Options</a>
+    </div>
 
     <script src="dropdown.js"></script>
 </body>

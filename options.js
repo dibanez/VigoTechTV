@@ -1,4 +1,4 @@
-﻿chrome.storage.sync.get(null, function(items) {
+chrome.storage.sync.get(null, function(items) {
     if (items['videoCodec']) {
         querySelectorAll('#videoCodec input').forEach(function(input) {
             var codec = input.parentNode.textContent;
@@ -54,6 +54,27 @@
         }, function() {
             document.getElementById('videoResolutions').value = '1920x1080';
         });
+    }
+
+    if (items['logoPosition']) {
+        document.getElementById('logoPosition').value = items['logoPosition'];
+    }
+
+    if (items['logoSize']) {
+        document.getElementById('logoSize').value = items['logoSize'];
+    }
+
+    if (items['pipPosition']) {
+        document.getElementById('pipPosition').value = items['pipPosition'];
+    }
+});
+
+// Load logo preview from local storage
+chrome.storage.local.get('logoDataUri', function(items) {
+    if (items['logoDataUri']) {
+        document.getElementById('logo-preview').src = items['logoDataUri'];
+        document.getElementById('logo-preview').style.display = 'inline-block';
+        document.getElementById('logo-remove').style.display = 'inline-block';
     }
 });
 
@@ -135,71 +156,68 @@ function hideSaving() {
     }, 700);
 }
 
-// camera & mic
-// microphone-devices
-function onGettingDevices(result, stream) {
-    chrome.storage.sync.get('microphone', function(storage) {
-        result.audioInputDevices.forEach(function(device, idx) {
-            var option = document.createElement('option');
-            option.innerHTML = device.label || device.id;
-            option.value = device.id;
+// --- Device enumeration using native API ---
+function populateDevices(stream) {
+    navigator.mediaDevices.enumerateDevices().then(function(devices) {
+        var audioInputDevices = devices.filter(function(d) { return d.kind === 'audioinput'; });
+        var videoInputDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
 
-            if (!storage.microphone && idx === 0) {
-                option.selected = true;
-            }
+        chrome.storage.sync.get('microphone', function(storage) {
+            audioInputDevices.forEach(function(device, idx) {
+                var option = document.createElement('option');
+                option.innerHTML = device.label || device.deviceId;
+                option.value = device.deviceId;
 
-            if (storage.microphone && storage.microphone === device.id) {
-                option.selected = true;
-            }
+                if (!storage.microphone && idx === 0) {
+                    option.selected = true;
+                }
 
-            document.getElementById('microphone-devices').appendChild(option);
+                if (storage.microphone && storage.microphone === device.deviceId) {
+                    option.selected = true;
+                }
+
+                document.getElementById('microphone-devices').appendChild(option);
+            });
         });
-    });
 
-    chrome.storage.sync.get('camera', function(storage) {
-        result.videoInputDevices.forEach(function(device, idx) {
-            var option = document.createElement('option');
-            option.innerHTML = device.label || device.id;
-            option.value = device.id;
+        chrome.storage.sync.get('camera', function(storage) {
+            videoInputDevices.forEach(function(device, idx) {
+                var option = document.createElement('option');
+                option.innerHTML = device.label || device.deviceId;
+                option.value = device.deviceId;
 
-            if (!storage.camera && idx === 0) {
-                option.selected = true;
-            }
+                if (!storage.camera && idx === 0) {
+                    option.selected = true;
+                }
 
-            if (storage.camera && storage.camera === device.id) {
-                option.selected = true;
-            }
+                if (storage.camera && storage.camera === device.deviceId) {
+                    option.selected = true;
+                }
 
-            document.getElementById('camera-devices').appendChild(option);
+                document.getElementById('camera-devices').appendChild(option);
+            });
         });
-    });
 
-    stream && stream.getTracks().forEach(function(track) {
-        track.stop();
+        if (stream) {
+            stream.getTracks().forEach(function(track) {
+                track.stop();
+            });
+        }
     });
 }
 
-getAllAudioVideoDevices(function(result) {
-    if (result.audioInputDevices.length && !result.audioInputDevices[0].label) {
-        var constraints = { audio: true, video: true };
-        navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
-            var video = document.createElement('video');
-            video.muted = true;
-            if('srcObject' in video) {
-                video.srcObject = stream;
-            }
-            else {
-                video.src = URL.createObjectURL(stream);
-            }
-
-            onGettingDevices(result, stream);
+// Try to enumerate - request permissions if labels are empty
+navigator.mediaDevices.enumerateDevices().then(function(devices) {
+    var hasLabels = devices.some(function(d) { return d.label; });
+    if (hasLabels) {
+        populateDevices();
+    } else {
+        navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(function(stream) {
+            populateDevices(stream);
         }).catch(function() {
-            onGettingDevices(result);
+            populateDevices();
         });
-        return;
     }
-
-    onGettingDevices(result);
 });
 
 document.getElementById('microphone-devices').onchange = function() {
@@ -214,4 +232,72 @@ document.getElementById('camera-devices').onchange = function() {
     chrome.storage.sync.set({
         camera: this.value
     }, hideSaving);
+};
+
+document.getElementById('logo-file').onchange = function() {
+    var file = this.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+        alert('Logo file must be smaller than 2MB');
+        this.value = '';
+        return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var dataUri = e.target.result;
+        showSaving();
+        chrome.storage.local.set({ logoDataUri: dataUri }, function() {
+            document.getElementById('logo-preview').src = dataUri;
+            document.getElementById('logo-preview').style.display = 'inline-block';
+            document.getElementById('logo-remove').style.display = 'inline-block';
+            hideSaving();
+        });
+    };
+    reader.readAsDataURL(file);
+};
+
+document.getElementById('logo-remove').onclick = function() {
+    showSaving();
+    chrome.storage.local.remove('logoDataUri', function() {
+        document.getElementById('logo-preview').style.display = 'none';
+        document.getElementById('logo-preview').src = '';
+        document.getElementById('logo-remove').style.display = 'none';
+        document.getElementById('logo-file').value = '';
+        hideSaving();
+    });
+};
+
+document.getElementById('logoPosition').onchange = function() {
+    this.disabled = true;
+    showSaving();
+    chrome.storage.sync.set({
+        logoPosition: this.value
+    }, function() {
+        document.getElementById('logoPosition').disabled = false;
+        hideSaving();
+    });
+};
+
+document.getElementById('logoSize').onchange = function() {
+    this.disabled = true;
+    showSaving();
+    chrome.storage.sync.set({
+        logoSize: this.value
+    }, function() {
+        document.getElementById('logoSize').disabled = false;
+        hideSaving();
+    });
+};
+
+document.getElementById('pipPosition').onchange = function() {
+    this.disabled = true;
+    showSaving();
+    chrome.storage.sync.set({
+        pipPosition: this.value
+    }, function() {
+        document.getElementById('pipPosition').disabled = false;
+        hideSaving();
+    });
 };

@@ -1,61 +1,46 @@
-{  
-   "name":"VigoTechTV",
-   "short_name":"VigoTechTV",
-   "author":"David Ibañez",
-   "version":"1.0",
-   "manifest_version":2,
-   "minimum_chrome_version":"49",
-   "description":"Record meetups",
-   "homepage_url":"https://github.com/muaz-khan/Chrome-Extensions/tree/master/screen-recording",
-   "background":{  
-      "scripts":[  
-         "background/background.common.js",
-         "background/background.js",
-         "background/background.desktopCapture.js",
-         "background/background.tabCapture.js",
-         "background/background.badgeText.js",
-         "background/background.getUserMedia.js",
-         "background/background.messaging.js",
-         "background/background.players.js",
-         "RecordRTC/MediaStreamRecorder.js",
-         "RecordRTC/MultiStreamRecorder.js",
-         "RecordRTC/StereoAudioRecorder.js",
-         "RecordRTC/DiskStorage.js"
-      ],
-      "persistent":false
+{
+   "name": "VigoTechTV",
+   "short_name": "VigoTechTV",
+   "author": "David Ibañez",
+   "version": "3.0",
+   "manifest_version": 3,
+   "minimum_chrome_version": "116",
+   "description": "Record meetups with screen, camera and microphone",
+   "background": {
+      "service_worker": "background/service-worker.js"
    },
-   "content_scripts":[  
-      {  
-        "matches":[  
-          "<all_urls>"
-        ],
-        "js":[  
-            "background/background.contentScript.js"
-        ],
+   "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["background/background.contentScript.js"],
         "all_frames": true,
         "run_at": "document_start"
       }
-    ],
-   "browser_action":{  
-      "default_icon":"images/main-icon.png",
-      "default_title":"Record Your Screen, Tab or Camera",
+   ],
+   "action": {
+      "default_icon": "images/main-icon.png",
+      "default_title": "Record Your Screen, Tab or Camera",
       "default_popup": "dropdown.html"
    },
-   "icons":{  
-      "16":"images/main-icon.png",
-      "22":"images/main-icon.png",
-      "32":"images/main-icon.png",
-      "48":"images/main-icon.png",
-      "128":"images/main-icon.png"
+   "icons": {
+      "16": "images/main-icon.png",
+      "22": "images/main-icon.png",
+      "32": "images/main-icon.png",
+      "48": "images/main-icon.png",
+      "128": "images/main-icon.png"
    },
-   "permissions":[  
+   "permissions": [
       "desktopCapture",
       "storage",
       "tabs",
       "tabCapture",
       "activeTab",
-      "<all_urls>",
       "identity",
+      "offscreen",
+      "scripting"
+   ],
+   "host_permissions": [
+      "<all_urls>",
       "https://www.googleapis.com/*"
    ],
    "oauth2": {
@@ -65,13 +50,14 @@
          "https://www.googleapis.com/auth/youtube"
        ]
    },
-   "content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
-   "web_accessible_resources":[  
-      "images/main-icon.png"
+   "web_accessible_resources": [
+      {
+        "resources": ["images/main-icon.png", "injected.js"],
+        "matches": ["<all_urls>"]
+      }
    ],
-   "options_ui":{  
-      "page":"options.html",
-      "chrome_style":false,
+   "options_ui": {
+      "page": "options.html",
       "open_in_tab": true
    }
 }

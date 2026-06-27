@@ -122,12 +122,12 @@ h1 {
 }
 </style>
 
-<title>RecordRTC Extension</title>
+<title>VigoTechTV</title>
 
 <p id="applying-changes">Applying Changes...</p>
 
 <article>
-<h1>Customize RecordRTC Extension</h1>
+<h1>VigoTechTV - Options</h1>
 
 <table>
     <tr>
@@ -230,9 +230,69 @@ h1 {
             </select>
         </td>
     </tr>
+
+    <tr><td colspan="2"><hr></td></tr>
+
+    <tr>
+        <td>
+            Logo (mosca):
+        </td>
+
+        <td>
+            <input type="file" id="logo-file" accept="image/*">
+            <button id="logo-remove" style="display:none;">Eliminar</button>
+            <br>
+            <img id="logo-preview" style="display:none; max-width:120px; max-height:120px; margin-top:5px;">
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            Logo position:
+        </td>
+
+        <td>
+            <select id="logoPosition">
+                <option value="top-left">Top Left</option>
+                <option value="top-right">Top Right</option>
+                <option value="bottom-left" selected>Bottom Left</option>
+                <option value="bottom-right">Bottom Right</option>
+            </select>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            Logo size:
+        </td>
+
+        <td>
+            <select id="logoSize">
+                <option value="5">5%</option>
+                <option value="8">8%</option>
+                <option value="10" selected>10%</option>
+                <option value="15">15%</option>
+                <option value="20">20%</option>
+            </select>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            Camera PiP position:
+        </td>
+
+        <td>
+            <select id="pipPosition">
+                <option value="top-left">Top Left</option>
+                <option value="top-right">Top Right</option>
+                <option value="bottom-left">Bottom Left</option>
+                <option value="bottom-right" selected>Bottom Right</option>
+            </select>
+        </td>
+    </tr>
 </table>
 
 </article>
 
-<script src="RecordRTC/getAllAudioVideoDevices.js"></script>
 <script src="options.js"></script>

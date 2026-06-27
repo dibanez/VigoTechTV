@@ -1,3 +1,11 @@
+function bytesToSize(bytes) {
+    var k = 1000;
+    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    if (bytes === 0) return '0 Bytes';
+    var i = parseInt(Math.floor(Math.log(bytes) / Math.log(k)), 10);
+    return (bytes / Math.pow(k, i)).toPrecision(3) + ' ' + sizes[i];
+}
+
 var video = document.querySelector('video');
 var fname = document.querySelector('#file-name');
 var fsize = document.querySelector('#file-size');
@@ -10,8 +18,8 @@ var browserCache = document.querySelector('#browser-cache');
 
 function setVideoWidth() {
     video.style.cursor = 'pointer';
-    video.style.marginTop = header.clientHeight;
-    video.style.height = innerHeight - header.clientHeight;
+    video.style.marginTop = header.clientHeight + 'px';
+    video.style.height = (innerHeight - header.clientHeight) + 'px';
 }
 
 window.onresize = setVideoWidth;

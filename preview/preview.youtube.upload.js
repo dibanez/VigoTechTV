@@ -94,21 +94,7 @@ var UploadVideo = function() {
 
 UploadVideo.prototype.ready = function(accessToken) {
     this.accessToken = accessToken;
-    this.gapi = gapi;
     this.authenticated = true;
-    false && this.gapi.client.request({
-        path: '/youtube/v3/channels',
-        params: {
-            part: 'snippet',
-            mine: true
-        },
-        callback: function(response) {
-            if (!response.error) {
-                // response.items[0].snippet.title -- channel title
-                // response.items[0].snippet.thumbnails.default.url -- channel thumbnail
-            }
-        }.bind(this)
-    });
 };
 
 UploadVideo.prototype.uploadFile = function(fileName, file) {
@@ -160,7 +146,7 @@ UploadVideo.prototype.uploadFile = function(fileName, file) {
             this.videoURL = 'https://www.youtube.com/watch?v=' + this.videoId;
 
             uploadVideo.callback('uploaded', this.videoURL);
-            setTimeout(this.pollForVideoStatus, 2000);
+            setTimeout(function() { uploadVideo.pollForVideoStatus(); }, 2000);
         }.bind(this)
     });
     this.uploadStartTime = Date.now();
@@ -168,21 +154,22 @@ UploadVideo.prototype.uploadFile = function(fileName, file) {
 };
 
 UploadVideo.prototype.pollForVideoStatus = function() {
-    this.gapi.client.request({
-        path: '/youtube/v3/videos',
-        params: {
-            part: 'status,player',
-            id: this.videoId
-        },
-        callback: function(response) {
+    var self = this;
+    var xhr = new XMLHttpRequest();
+    var url = 'https://www.googleapis.com/youtube/v3/videos?part=status,player&id=' + encodeURIComponent(self.videoId);
+    xhr.open('GET', url, true);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + self.accessToken);
+    xhr.onload = function() {
+        try {
+            var response = JSON.parse(xhr.responseText);
             if (response.error) {
-                uploadVideo.pollForVideoStatus();
+                setTimeout(function() { uploadVideo.pollForVideoStatus(); }, STATUS_POLLING_INTERVAL_MILLIS);
             } else {
                 var uploadStatus = response.items[0].status.uploadStatus;
                 switch (uploadStatus) {
                     case 'uploaded':
                         uploadVideo.callback('uploaded', uploadVideo.videoURL);
-                        uploadVideo.pollForVideoStatus();
+                        setTimeout(function() { uploadVideo.pollForVideoStatus(); }, STATUS_POLLING_INTERVAL_MILLIS);
                         break;
                     case 'processed':
                         uploadVideo.callback('processed', uploadVideo.videoURL);
@@ -192,8 +179,14 @@ UploadVideo.prototype.pollForVideoStatus = function() {
                         break;
                 }
             }
-        }.bind(this)
-    });
+        } catch (e) {
+            setTimeout(function() { uploadVideo.pollForVideoStatus(); }, STATUS_POLLING_INTERVAL_MILLIS);
+        }
+    };
+    xhr.onerror = function() {
+        setTimeout(function() { uploadVideo.pollForVideoStatus(); }, STATUS_POLLING_INTERVAL_MILLIS);
+    };
+    xhr.send();
 };
 
 /* cors_upload.js Copyright 2015 Google Inc. All Rights Reserved. */
