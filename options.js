@@ -67,6 +67,18 @@ chrome.storage.sync.get(null, function(items) {
     if (items['pipPosition']) {
         document.getElementById('pipPosition').value = items['pipPosition'];
     }
+
+    // Default transcription to ON unless explicitly disabled.
+    document.getElementById('enableTranscription').checked =
+        (typeof items['enableTranscription'] === 'undefined') || items['enableTranscription'] === 'true';
+
+    if (items['transcriptionLang']) {
+        document.getElementById('transcriptionLang').value = items['transcriptionLang'];
+    }
+
+    if (items['transcriptionModel']) {
+        document.getElementById('transcriptionModel').value = items['transcriptionModel'];
+    }
 });
 
 // Load logo preview from local storage
@@ -298,6 +310,35 @@ document.getElementById('pipPosition').onchange = function() {
         pipPosition: this.value
     }, function() {
         document.getElementById('pipPosition').disabled = false;
+        hideSaving();
+    });
+};
+
+document.getElementById('enableTranscription').onchange = function() {
+    showSaving();
+    chrome.storage.sync.set({
+        enableTranscription: this.checked ? 'true' : 'false'
+    }, hideSaving);
+};
+
+document.getElementById('transcriptionLang').onchange = function() {
+    this.disabled = true;
+    showSaving();
+    chrome.storage.sync.set({
+        transcriptionLang: this.value || 'es-ES'
+    }, function() {
+        document.getElementById('transcriptionLang').disabled = false;
+        hideSaving();
+    });
+};
+
+document.getElementById('transcriptionModel').onchange = function() {
+    this.disabled = true;
+    showSaving();
+    chrome.storage.sync.set({
+        transcriptionModel: this.value || 'base'
+    }, function() {
+        document.getElementById('transcriptionModel').disabled = false;
         hideSaving();
     });
 };

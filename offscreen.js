@@ -94,6 +94,12 @@ function addLogoToCompositor(comp, config, canvasW, canvasH) {
     });
 }
 
+// Subtitles are NOT generated here. Live Web Speech transcription is impossible
+// during recording: getUserMedia holds the mic in this offscreen document and
+// Chrome denies webkitSpeechRecognition with "not-allowed" (the mic can't be
+// shared in the same document). Instead, the recorded audio is transcribed later
+// with local Whisper from the preview page (see preview/preview.whisper.js).
+
 // --- Recording Logic ---
 
 function startRecordingStream(finalStream, config) {
@@ -209,10 +215,16 @@ function stopScreenRecording(config) {
 
             recorder = null;
 
-            chrome.runtime.sendMessage({
-                target: 'service-worker',
-                action: 'recording-stopped'
-            });
+            function notifyStopped() {
+                chrome.runtime.sendMessage({
+                    target: 'service-worker',
+                    action: 'recording-stopped'
+                });
+            }
+
+            // Mark the just-recorded file so the preview shows it by default
+            // (instead of the last-viewed one persisted in localStorage).
+            chrome.storage.local.set({ lastRecordedFile: file.name }, notifyStopped);
         });
     });
 }

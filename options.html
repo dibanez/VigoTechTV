@@ -235,6 +235,62 @@ h1 {
 
     <tr>
         <td>
+            Subtítulos automáticos:
+        </td>
+
+        <td>
+            <label><input type="checkbox" id="enableTranscription" checked> Mostrar la opción de generar subtítulos en el preview</label>
+            <br>
+            <small style="display:inline-block;margin-top:6px;color:#666;">
+                Tras grabar, en el preview podrás generar subtítulos con Whisper (local, en el navegador),
+                descargarlos en .srt/.vtt y subirlos a YouTube. El audio no sale del equipo.
+            </small>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            Idioma de la transcripción:
+        </td>
+
+        <td>
+            <select id="transcriptionLang">
+                <option value="es-ES" selected>Español (España)</option>
+                <option value="gl-ES">Galego</option>
+                <option value="ca-ES">Català</option>
+                <option value="es-MX">Español (México)</option>
+                <option value="en-US">English (US)</option>
+                <option value="en-GB">English (UK)</option>
+                <option value="pt-PT">Português</option>
+                <option value="fr-FR">Français</option>
+                <option value="de-DE">Deutsch</option>
+                <option value="it-IT">Italiano</option>
+            </select>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            Calidad del modelo:
+        </td>
+
+        <td>
+            <select id="transcriptionModel">
+                <option value="tiny">Rápido (tiny · ~40 MB)</option>
+                <option value="base" selected>Equilibrado (base · ~80 MB)</option>
+                <option value="small">Preciso (small · ~240 MB, más lento)</option>
+            </select>
+            <br>
+            <small style="display:inline-block;margin-top:6px;color:#666;">
+                El modelo se descarga una sola vez y queda en caché.
+            </small>
+        </td>
+    </tr>
+
+    <tr><td colspan="2"><hr></td></tr>
+
+    <tr>
+        <td>
             Logo (mosca):
         </td>
 

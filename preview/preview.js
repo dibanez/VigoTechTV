@@ -126,20 +126,28 @@ function onGettingFile(f, item) {
     }
 
     localStorage.setItem('selected-file', file.name);
+
+    // Let the subtitles panel load/show the transcript for this recording.
+    if (typeof window.onTranscriptForFile === 'function') {
+        window.onTranscriptForFile(file, item);
+    }
 }
 
-var recentFile = localStorage.getItem('selected-file');
-DiskStorage.GetLastSelectedFile(recentFile, function(file) {
-    if (!file) {
-        onGettingFile(file);
-        return;
-    }
-
-    DiskStorage.GetFilesList(function(list) {
-        if (!recentFile) {
-            onGettingFile(file, list[0]);
+// If a recording just finished, the offscreen sets "lastRecordedFile" so we open
+// that one by default instead of the last-viewed file kept in localStorage.
+function loadPreview() {
+    var recentFile = localStorage.getItem('selected-file');
+    DiskStorage.GetLastSelectedFile(recentFile, function(file) {
+        if (!file) {
+            onGettingFile(file);
             return;
         }
+
+        DiskStorage.GetFilesList(function(list) {
+            if (!recentFile) {
+                onGettingFile(file, list[0]);
+                return;
+            }
 
         var found;
         list.forEach(function(item) {
@@ -165,6 +173,20 @@ DiskStorage.GetLastSelectedFile(recentFile, function(file) {
         onGettingFile(file, found);
     });
 });
+}
+
+if (typeof chrome !== 'undefined' && chrome.storage) {
+    chrome.storage.local.get('lastRecordedFile', function(items) {
+        if (items && items.lastRecordedFile) {
+            // Just-recorded file wins: show it by default, then clear the marker.
+            localStorage.setItem('selected-file', items.lastRecordedFile);
+            chrome.storage.local.remove('lastRecordedFile');
+        }
+        loadPreview();
+    });
+} else {
+    loadPreview();
+}
 
 var btnUploadDropDown = document.querySelector('#btn-upload-dropdown');
 document.querySelector('#btn-upload').onclick = function(e) {

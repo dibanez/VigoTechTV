@@ -146,6 +146,16 @@ UploadVideo.prototype.uploadFile = function(fileName, file) {
             this.videoURL = 'https://www.youtube.com/watch?v=' + this.videoId;
 
             uploadVideo.callback('uploaded', this.videoURL);
+
+            // Upload auto-generated subtitles alongside the video (if available).
+            if (typeof window.uploadCaptionsToYouTube === 'function') {
+                window.uploadCaptionsToYouTube(this.videoId, this.accessToken, function(result, detail) {
+                    if (result !== 'ok' && result !== 'no-transcript') {
+                        console.warn('Subtitle upload result:', result, detail || '');
+                    }
+                });
+            }
+
             setTimeout(function() { uploadVideo.pollForVideoStatus(); }, 2000);
         }.bind(this)
     });

@@ -14,6 +14,7 @@ Built for [VigoTech](https://vigotech.org) community events.
 - **Multiple codecs** - VP8, VP9, H264, MKV
 - **Configurable quality** - Resolution, frame rate and bitrate settings
 - **YouTube upload** - Direct upload via OAuth2 (public, unlisted or private)
+- **Automatic subtitles** - On-demand speech-to-text with local Whisper (transformers.js, runs in the browser; audio never leaves the device). From the preview, generate subtitles for a recording, download them as .srt/.vtt, and upload them to YouTube as captions. Language and model quality are configurable in Options.
 - **Local storage** - Recordings saved to IndexedDB for later playback
 - **Keyboard shortcut** - Ctrl+Space to stop recording from any tab
 
@@ -21,6 +22,7 @@ Built for [VigoTech](https://vigotech.org) community events.
 
 - Chrome 116 or later
 - Manifest V3
+- Subtitles: internet access on first use to download the Whisper model (cached afterwards)
 
 ## Installation
 
@@ -64,13 +66,27 @@ Right-click the extension icon and select **Options**, or click "Options" in the
 
 ### Preview & Upload
 
-After recording, the preview page lets you:
+After recording, the preview page opens the **most recent recording** by default and lets you:
 
 - Play back the recording
+- **Generate subtitles** with local Whisper (see below)
 - Upload to YouTube (requires Google OAuth2 authorization)
 - Upload to a private server
 - Rename or delete recordings
 - View file metadata (size, resolution, duration)
+
+### Subtitles (local Whisper)
+
+Subtitles are generated **on demand from the recorded audio**, not live, and run entirely in the browser with [transformers.js](https://github.com/huggingface/transformers.js) (Whisper on WASM). The audio never leaves the device.
+
+1. Open a recording in the preview page
+2. In the **Subtitles** panel (bottom-left), click **Generar subtítulos**
+3. The first run downloads the Whisper model (~80 MB for `base`) from the Hugging Face hub and caches it; later runs are offline
+4. When done, download the subtitles as **.srt** / **.vtt**, or upload them to YouTube as captions on your next YouTube upload
+
+Language and model quality (`tiny` / `base` / `small`) are configurable in **Options**. Results are cached per recording, so each video is only transcribed once.
+
+> **Note:** Live transcription (Web Speech API) is intentionally not used. During a recording, `getUserMedia` holds the microphone in the offscreen document and Chrome denies `webkitSpeechRecognition` with `not-allowed` (the mic cannot be shared in the same document). Transcribing the recorded audio afterwards avoids the conflict and works for screen, tab and camera recordings alike.
 
 ## Project Structure
 
@@ -81,9 +97,11 @@ VigoTechTV/
 ├── options.html/js                # Settings page
 ├── preview.html                   # Recording playback & upload
 ├── preview/
-│   ├── preview.js                 # Video player logic
+│   ├── preview.js                 # Video player logic (opens newest recording)
+│   ├── preview.subtitles.js       # Subtitles panel (generate/download/upload)
+│   ├── preview.whisper.js         # Local Whisper transcription (ES module)
 │   ├── preview.php.upload.js      # Private server upload
-│   └── preview.youtube.upload.js  # YouTube upload (OAuth2)
+│   └── preview.youtube.upload.js  # YouTube upload (OAuth2) + captions
 ├── offscreen.html/js              # Recording engine (media APIs)
 ├── injected.js                    # Content script API for websites
 ├── background/
@@ -92,9 +110,11 @@ VigoTechTV/
 ├── lib/
 │   ├── AudioMixer.js              # WebAudio stream mixer
 │   ├── NativeRecorder.js          # MediaRecorder wrapper
-│   └── CanvasCompositor.js        # Canvas compositing (PiP + overlays)
+│   ├── CanvasCompositor.js        # Canvas compositing (PiP + overlays)
+│   └── Subtitles.js               # SRT/VTT builders
 ├── RecordRTC/
 │   └── DiskStorage.js             # IndexedDB storage for recordings
+├── vendor/                        # Bundled Whisper runtime (transformers.js + ONNX WASM)
 └── images/                        # Extension icons
 ```
 
@@ -120,10 +140,15 @@ Offscreen Document (offscreen.js)
 DiskStorage (IndexedDB)
   │
   ▼
-Preview (preview.js) → YouTube / Private server
+Preview (preview.js) ──► YouTube / Private server
+  │
+  └─► Subtitles (preview.whisper.js)
+        - decode recorded audio → 16 kHz mono
+        - Whisper (transformers.js / ONNX WASM) in-browser
+        - cues → SRT/VTT → download / YouTube captions
 ```
 
-The extension uses Chrome's offscreen document API because service workers have no DOM access, while media recording APIs (`getUserMedia`, `MediaRecorder`, `Canvas`) require a document context.
+The extension uses Chrome's offscreen document API because service workers have no DOM access, while media recording APIs (`getUserMedia`, `MediaRecorder`, `Canvas`) require a document context. Subtitle transcription runs in the preview page (not the offscreen document) so it never competes with the recording for the microphone.
 
 ## Author
 

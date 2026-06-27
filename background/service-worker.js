@@ -191,6 +191,13 @@ function getUserConfigs(callback) {
             pipPosition = items['pipPosition'];
         }
 
+        // Transcription (default ON; needs the microphone to work).
+        var enableTranscription = true;
+        if (typeof items['enableTranscription'] !== 'undefined') {
+            enableTranscription = items['enableTranscription'] == 'true';
+        }
+        var transcriptionLang = items['transcriptionLang'] || 'es-ES';
+
         var microphoneDevice = items['microphone'] || false;
         var cameraDevice = items['camera'] || false;
 
@@ -211,7 +218,9 @@ function getUserConfigs(callback) {
                 logoDataUri: localItems['logoDataUri'] || '',
                 logoPosition: logoPosition,
                 logoSize: logoSize,
-                pipPosition: pipPosition
+                pipPosition: pipPosition,
+                enableTranscription: enableTranscription,
+                transcriptionLang: transcriptionLang
             });
         });
     });

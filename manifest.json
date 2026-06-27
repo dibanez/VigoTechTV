@@ -47,7 +47,8 @@
        "client_id": "393001847715-2p3sqvaqu4067jqs5sj5u8shs0kg7hm3.apps.googleusercontent.com",
        "scopes": [
          "https://www.googleapis.com/auth/youtube.upload",
-         "https://www.googleapis.com/auth/youtube"
+         "https://www.googleapis.com/auth/youtube",
+         "https://www.googleapis.com/auth/youtube.force-ssl"
        ]
    },
    "web_accessible_resources": [
@@ -59,5 +60,8 @@
    "options_ui": {
       "page": "options.html",
       "open_in_tab": true
+   },
+   "content_security_policy": {
+      "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' data: blob: https://huggingface.co https://*.huggingface.co https://*.hf.co https://cdn.jsdelivr.net"
    }
 }
