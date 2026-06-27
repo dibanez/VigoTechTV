@@ -215,16 +215,19 @@ function stopScreenRecording(config) {
 
             recorder = null;
 
+            // Pass the just-recorded file name so the service worker can mark it
+            // (chrome.storage is NOT available in offscreen documents - only the
+            // chrome.runtime messaging APIs are). The preview uses it to open this
+            // recording by default instead of the last-viewed one.
             function notifyStopped() {
                 chrome.runtime.sendMessage({
                     target: 'service-worker',
-                    action: 'recording-stopped'
+                    action: 'recording-stopped',
+                    fileName: file.name
                 });
             }
 
-            // Mark the just-recorded file so the preview shows it by default
-            // (instead of the last-viewed one persisted in localStorage).
-            chrome.storage.local.set({ lastRecordedFile: file.name }, notifyStopped);
+            notifyStopped();
         });
     });
 }

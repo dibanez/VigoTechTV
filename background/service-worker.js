@@ -32,6 +32,42 @@ var reverse = false;
 var initialTime;
 var timerInterval;
 
+// MV3 service workers can't reliably set the action icon by `path` (it fails
+// intermittently with "Failed to fetch", especially in a loop). Preload each PNG
+// into ImageData once (via OffscreenCanvas) and set it from memory instead.
+var iconImageData = {};
+var iconsPreloaded = false;
+
+async function preloadIcons() {
+    if (iconsPreloaded) return;
+    var names = images.concat(['main-icon.png']);
+    await Promise.all(names.map(async function(name) {
+        try {
+            var resp = await fetch(chrome.runtime.getURL('images/' + name));
+            var blob = await resp.blob();
+            var bitmap = await createImageBitmap(blob);
+            var canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(bitmap, 0, 0);
+            iconImageData[name] = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+            bitmap.close();
+        } catch (e) {
+            console.warn('Icon preload failed for ' + name, e);
+        }
+    }));
+    iconsPreloaded = true;
+}
+
+function setActionIcon(name) {
+    if (iconImageData[name]) {
+        chrome.action.setIcon({ imageData: iconImageData[name] }).catch(function() {});
+    } else {
+        // Fallback (and kick off preload for next time).
+        chrome.action.setIcon({ path: 'images/' + name }).catch(function() {});
+        preloadIcons();
+    }
+}
+
 function setBadgeText(text) {
     chrome.action.setBadgeBackgroundColor({ color: [255, 0, 0, 255] });
     chrome.action.setBadgeText({ text: text + '' });
@@ -60,7 +96,7 @@ function checkTime() {
 function onRecording() {
     if (!isRecording) return;
 
-    chrome.action.setIcon({ path: 'images/' + images[imgIndex] });
+    setActionIcon(images[imgIndex]);
 
     if (!reverse) {
         imgIndex++;
@@ -81,7 +117,7 @@ function onRecording() {
         return;
     }
 
-    chrome.action.setIcon({ path: 'images/main-icon.png' });
+    setActionIcon('main-icon.png');
 }
 
 // --- Offscreen Document Management ---
@@ -319,7 +355,7 @@ function stopRecording() {
 }
 
 function setDefaults() {
-    chrome.action.setIcon({ path: 'images/main-icon.png' });
+    setActionIcon('main-icon.png');
     isRecording = false;
     imgIndex = 0;
     if (timerInterval) {
@@ -337,7 +373,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
             isRecording = true;
             initialTime = Date.now();
             timerInterval = setInterval(checkTime, 100);
-            onRecording();
+            preloadIcons().then(onRecording);
 
             // Open camera preview if needed
             if (message.showCameraPreview && openCameraPreviewDuringRecording) {
@@ -352,7 +388,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
                 timerInterval = null;
             }
             setBadgeText('');
-            chrome.action.setIcon({ path: 'images/main-icon.png' });
+            setActionIcon('main-icon.png');
             chrome.action.setTitle({ title: 'Record Your Screen, Tab or Camera' });
 
             chrome.storage.sync.set({
@@ -361,20 +397,31 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
             });
 
             if (openPreviewOnStopRecording) {
-                chrome.tabs.query({}, function(tabs) {
-                    var found = false;
-                    var url = 'chrome-extension://' + chrome.runtime.id + '/preview.html';
-                    for (var i = tabs.length - 1; i >= 0; i--) {
-                        if (tabs[i].url === url) {
-                            found = true;
-                            chrome.tabs.update(tabs[i].id, { active: true, url: url });
-                            break;
+                function openPreview() {
+                    chrome.tabs.query({}, function(tabs) {
+                        var found = false;
+                        var url = 'chrome-extension://' + chrome.runtime.id + '/preview.html';
+                        for (var i = tabs.length - 1; i >= 0; i--) {
+                            if (tabs[i].url === url) {
+                                found = true;
+                                chrome.tabs.update(tabs[i].id, { active: true, url: url });
+                                break;
+                            }
                         }
-                    }
-                    if (!found) {
-                        chrome.tabs.create({ url: 'preview.html' });
-                    }
-                });
+                        if (!found) {
+                            chrome.tabs.create({ url: 'preview.html' });
+                        }
+                    });
+                }
+
+                // Mark the just-recorded file (set in storage here, since the
+                // offscreen document has no chrome.storage access) so the preview
+                // opens it by default. Open the preview only after it is stored.
+                if (message.fileName) {
+                    chrome.storage.local.set({ lastRecordedFile: message.fileName }, openPreview);
+                } else {
+                    openPreview();
+                }
             }
         }
 
