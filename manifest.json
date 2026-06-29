@@ -2,7 +2,7 @@
    "name": "VigoTechTV",
    "short_name": "VigoTechTV",
    "author": "David Ibañez",
-   "version": "3.0",
+   "version": "3.0.1",
    "manifest_version": 3,
    "minimum_chrome_version": "116",
    "description": "Record meetups with screen, camera and microphone",
