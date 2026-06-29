@@ -9,14 +9,12 @@
    "background": {
       "service_worker": "background/service-worker.js"
    },
-   "content_scripts": [
-      {
-        "matches": ["<all_urls>"],
-        "js": ["background/background.contentScript.js"],
-        "all_frames": true,
-        "run_at": "document_start"
+   "commands": {
+      "stop-recording": {
+         "suggested_key": { "default": "Ctrl+Shift+S" },
+         "description": "Detener la grabación"
       }
-   ],
+   },
    "action": {
       "default_icon": "images/main-icon.png",
       "default_title": "Record Your Screen, Tab or Camera",
@@ -40,7 +38,6 @@
       "scripting"
    ],
    "host_permissions": [
-      "<all_urls>",
       "https://www.googleapis.com/*"
    ],
    "oauth2": {
@@ -51,12 +48,6 @@
          "https://www.googleapis.com/auth/youtube.force-ssl"
        ]
    },
-   "web_accessible_resources": [
-      {
-        "resources": ["images/main-icon.png", "injected.js"],
-        "matches": ["<all_urls>"]
-      }
-   ],
    "options_ui": {
       "page": "options.html",
       "open_in_tab": true

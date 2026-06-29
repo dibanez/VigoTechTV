@@ -309,32 +309,14 @@ async function startRecording() {
                 });
             });
         } else if (config.enableScreen) {
-            // Desktop capture - need active tab as target for chooseDesktopMedia in MV3
-            getActiveTab(function(activeTab) {
-                var screenSources = ['screen', 'window'];
-                if (config.enableSpeakers !== false) {
-                    screenSources.push('audio');
-                }
-
-                if (!activeTab) {
-                    console.error('No active tab found for desktop capture');
-                    setDefaults();
-                    return;
-                }
-
-                chrome.desktopCapture.chooseDesktopMedia(screenSources, activeTab, function(streamId, opts) {
-                    if (!streamId || !streamId.toString().length) {
-                        setDefaults();
-                        return;
-                    }
-                    sendToOffscreen({
-                        target: 'offscreen',
-                        action: 'start-recording',
-                        config: config,
-                        desktopStreamId: streamId,
-                        canRequestAudioTrack: opts ? opts.canRequestAudioTrack : false
-                    });
-                });
+            // Screen capture via getDisplayMedia in the offscreen document. This
+            // uses the OS desktop portal and works on Wayland (the legacy
+            // chooseDesktopMedia + getUserMedia streamId path aborts there).
+            sendToOffscreen({
+                target: 'offscreen',
+                action: 'start-recording',
+                config: config,
+                useDisplayMedia: true
             });
         } else {
             // Camera/mic only
@@ -432,7 +414,17 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     }
 });
 
-// --- Port-based messaging (from popup and content scripts) ---
+// --- Keyboard shortcut (replaces the old all-pages content script) ---
+// Ctrl+Shift+S (configurable in chrome://extensions/shortcuts) stops recording.
+if (chrome.commands && chrome.commands.onCommand) {
+    chrome.commands.onCommand.addListener(function(command) {
+        if (command === 'stop-recording' && isRecording) {
+            stopRecording();
+        }
+    });
+}
+
+// --- Port-based messaging (from the popup) ---
 var runtimePort;
 
 chrome.runtime.onConnect.addListener(function(port) {
@@ -451,31 +443,6 @@ chrome.runtime.onConnect.addListener(function(port) {
 
             if (isRecording && message.dropdown) {
                 stopRecording();
-                return;
-            }
-
-            if (message.RecordRTC_Extension) {
-                openPreviewOnStopRecording = false;
-                openCameraPreviewDuringRecording = false;
-
-                enableTabCaptureAPI = message['enableTabCaptureAPI'] === true;
-                enableTabCaptureAPIAudioOnly = message['enableTabCaptureAPIAudioOnly'] === true;
-                enableScreen = message['enableScreen'] === true;
-                enableMicrophone = message['enableMicrophone'] === true;
-                enableCamera = message['enableCamera'] === true;
-                enableSpeakers = message['enableSpeakers'] === true;
-
-                chrome.storage.sync.set({
-                    enableTabCaptureAPI: enableTabCaptureAPI ? 'true' : 'false',
-                    enableTabCaptureAPIAudioOnly: enableTabCaptureAPIAudioOnly ? 'true' : 'false',
-                    enableMicrophone: enableMicrophone ? 'true' : 'false',
-                    enableCamera: enableCamera ? 'true' : 'false',
-                    enableScreen: enableScreen ? 'true' : 'false',
-                    enableSpeakers: enableSpeakers ? 'true' : 'false',
-                    isRecording: 'true'
-                }, function() {
-                    startRecording();
-                });
                 return;
             }
 
