@@ -19,6 +19,8 @@ var openCameraPreviewDuringRecording = true;
 var logoPosition = 'bottom-left';
 var logoSize = 10;
 var pipPosition = 'bottom-right';
+var layoutMode = 'overlay';
+var cameraSize = 20;
 
 // --- Init ---
 chrome.runtime.onInstalled.addListener(function() {
@@ -226,6 +228,12 @@ function getUserConfigs(callback) {
         if (items['pipPosition']) {
             pipPosition = items['pipPosition'];
         }
+        if (items['layoutMode']) {
+            layoutMode = items['layoutMode'];
+        }
+        if (items['cameraSize']) {
+            cameraSize = parseInt(items['cameraSize']) || cameraSize;
+        }
 
         // Transcription (default ON; needs the microphone to work).
         var enableTranscription = true;
@@ -255,6 +263,8 @@ function getUserConfigs(callback) {
                 logoPosition: logoPosition,
                 logoSize: logoSize,
                 pipPosition: pipPosition,
+                layoutMode: layoutMode,
+                cameraSize: cameraSize,
                 enableTranscription: enableTranscription,
                 transcriptionLang: transcriptionLang
             });

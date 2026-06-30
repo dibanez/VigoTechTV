@@ -96,6 +96,70 @@ function addLogoToCompositor(comp, config, canvasW, canvasH) {
     });
 }
 
+// Place the logo centred (preserving aspect ratio) inside a reserved box.
+// Used by the "framed" layout so the logo never overlaps screen or camera.
+// The logo is sized from the "Logo size" setting (% of canvas width) and only
+// shrunk further if it would not fit the reserved box — it is never upscaled
+// to fill the box.
+function addLogoFramed(comp, config, box, canvasW) {
+    if (!config.logoDataUri || box.w < 20 || box.h < 20) {
+        return Promise.resolve();
+    }
+    return loadImage(config.logoDataUri).then(function(img) {
+        var logoSizePct = (parseInt(config.logoSize) || 10) / 100;
+        var targetW = canvasW * logoSizePct;
+        // Fit within the target width, the box width and the box height.
+        var scale = Math.min(targetW / img.width, box.w / img.width, box.h / img.height);
+        var logoW = Math.round(img.width * scale);
+        var logoH = Math.round(img.height * scale);
+        var pad = Math.round(canvasW * 0.012);
+        // Centred horizontally in the narrow column; anchored to the outer
+        // vertical edge (away from the camera) so it sits in the corner.
+        var x = Math.round(box.x + (box.w - logoW) / 2);
+        var y;
+        if (box.vAlign === 'top') {
+            y = Math.round(box.y + pad);
+        } else {
+            y = Math.round(box.y + box.h - logoH - pad);
+        }
+        comp.addImage(img, { x: x, y: y, width: logoW, height: logoH });
+    }).catch(function(e) {
+        console.warn('offscreen: failed to load logo (framed):', e.message);
+    });
+}
+
+// Shared finish step for the screen+camera composite: start the compositor,
+// mix audio from both sources and hand the final stream to the recorder.
+function finishPiP(comp, canvasWidth, canvasHeight, screenStream, cameraStream, config) {
+    var compositeVideoStream = comp.start(canvasWidth, canvasHeight);
+    if (!compositeVideoStream) {
+        reportError('Canvas captureStream not supported');
+        return;
+    }
+
+    console.log('offscreen: compositor started',
+        'compositeVideoTracks=' + compositeVideoStream.getVideoTracks().length);
+
+    audioMixer = new AudioMixer();
+    var mixedAudio = audioMixer.mix([screenStream, cameraStream]);
+
+    var finalStream = new MediaStream();
+    compositeVideoStream.getVideoTracks().forEach(function(track) {
+        finalStream.addTrack(track);
+    });
+    if (mixedAudio) {
+        mixedAudio.getAudioTracks().forEach(function(track) {
+            finalStream.addTrack(track);
+        });
+    }
+
+    console.log('offscreen: final PiP stream ready',
+        'videoTracks=' + finalStream.getVideoTracks().length,
+        'audioTracks=' + finalStream.getAudioTracks().length);
+
+    startRecordingStream(finalStream, config);
+}
+
 // Subtitles are NOT generated here. Live Web Speech transcription is impossible
 // during recording: getUserMedia holds the mic in this offscreen document and
 // Chrome denies webkitSpeechRecognition with "not-allowed" (the mic can't be
@@ -522,15 +586,73 @@ function buildFinalStream(screenStream, config) {
             var canvasWidth = screenSettings.width || 1920;
             var canvasHeight = screenSettings.height || 1080;
 
-            console.log('offscreen: PiP mode',
-                'canvas=' + canvasWidth + 'x' + canvasHeight);
-
             compositor = new CanvasCompositor();
+
+            var layoutMode = config.layoutMode || 'overlay';
+
+            if (layoutMode === 'framed') {
+                // No-overlap layout: the screen is fitted into the main area and
+                // the camera + logo live in a dedicated sidebar. Nothing is
+                // painted on top of anything else. The sidebar side (left/right)
+                // and the camera position within it (top/bottom) follow the
+                // "Camera PiP position" setting.
+                var pipPos = config.pipPosition || 'bottom-right';
+                var sidebarLeft = pipPos.indexOf('left') !== -1;
+                var camAtTop = pipPos.indexOf('top') !== -1;
+
+                var camPct = parseInt(config.cameraSize) || 25;
+                var gap = Math.round(canvasWidth * 0.012);
+                var camColW = Math.round(canvasWidth * (camPct / 100));
+                camColW = Math.max(160, Math.min(camColW, Math.round(canvasWidth * 0.45)));
+
+                console.log('offscreen: PiP framed mode',
+                    'canvas=' + canvasWidth + 'x' + canvasHeight,
+                    'sidebar=' + camColW + 'px (' + camPct + '%)',
+                    'side=' + (sidebarLeft ? 'left' : 'right'),
+                    'camera=' + (camAtTop ? 'top' : 'bottom'));
+
+                compositor.setBackground('#101114');
+
+                // X of the sidebar column and of the screen region.
+                var sidebarX = sidebarLeft ? gap : (canvasWidth - camColW - gap);
+                var screenX = sidebarLeft ? (camColW + gap * 2) : gap;
+
+                // Screen fitted (letterboxed) into the main region.
+                var screenBoxW = canvasWidth - camColW - gap * 3;
+                var screenBoxH = canvasHeight - gap * 2;
+                compositor.addStream(screenStream, {
+                    x: screenX, y: gap, width: screenBoxW, height: screenBoxH, fit: 'contain'
+                });
+
+                // Camera fitted into a 16:9 box at the top or bottom of the sidebar.
+                var camBoxW = camColW;
+                var camBoxH = Math.round(camBoxW * 9 / 16);
+                var camBoxY = camAtTop ? gap : (canvasHeight - camBoxH - gap);
+                compositor.addStream(cameraStream, {
+                    x: sidebarX, y: camBoxY, width: camBoxW, height: camBoxH, fit: 'contain'
+                });
+
+                // Logo centred in the sidebar space left free by the camera.
+                var logoBox = camAtTop
+                    ? { x: sidebarX, y: camBoxY + camBoxH + gap, w: camBoxW,
+                        h: canvasHeight - (camBoxY + camBoxH + gap) - gap, vAlign: 'bottom' }
+                    : { x: sidebarX, y: gap, w: camBoxW, h: camBoxY - gap * 2, vAlign: 'top' };
+
+                addLogoFramed(compositor, config, logoBox, canvasWidth).then(function() {
+                    finishPiP(compositor, canvasWidth, canvasHeight, screenStream, cameraStream, config);
+                });
+                return;
+            }
+
+            // Overlay layout (default): camera floats as a PiP over the screen.
+            console.log('offscreen: PiP overlay mode',
+                'canvas=' + canvasWidth + 'x' + canvasHeight);
 
             compositor.addStream(screenStream, { fullCanvas: true });
 
-            var pipWidth = Math.round(canvasWidth * 0.20);
-            var pipHeight = Math.round(canvasHeight * 0.20);
+            var camPctOverlay = parseInt(config.cameraSize) || 20;
+            var pipWidth = Math.round(canvasWidth * (camPctOverlay / 100));
+            var pipHeight = Math.round(canvasHeight * (camPctOverlay / 100));
             var pipPos = calcPosition(config.pipPosition || 'bottom-right', canvasWidth, canvasHeight, pipWidth, pipHeight);
             compositor.addStream(cameraStream, {
                 x: pipPos.x,
@@ -545,34 +667,7 @@ function buildFinalStream(screenStream, config) {
                 'size=' + pipWidth + 'x' + pipHeight);
 
             addLogoToCompositor(compositor, config, canvasWidth, canvasHeight).then(function() {
-                var compositeVideoStream = compositor.start(canvasWidth, canvasHeight);
-
-                if (!compositeVideoStream) {
-                    reportError('Canvas captureStream not supported');
-                    return;
-                }
-
-                console.log('offscreen: compositor started',
-                    'compositeVideoTracks=' + compositeVideoStream.getVideoTracks().length);
-
-                audioMixer = new AudioMixer();
-                var mixedAudio = audioMixer.mix([screenStream, cameraStream]);
-
-                var finalStream = new MediaStream();
-                compositeVideoStream.getVideoTracks().forEach(function(track) {
-                    finalStream.addTrack(track);
-                });
-                if (mixedAudio) {
-                    mixedAudio.getAudioTracks().forEach(function(track) {
-                        finalStream.addTrack(track);
-                    });
-                }
-
-                console.log('offscreen: final PiP stream ready',
-                    'videoTracks=' + finalStream.getVideoTracks().length,
-                    'audioTracks=' + finalStream.getAudioTracks().length);
-
-                startRecordingStream(finalStream, config);
+                finishPiP(compositor, canvasWidth, canvasHeight, screenStream, cameraStream, config);
             });
             return;
         }

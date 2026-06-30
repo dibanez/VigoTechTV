@@ -68,6 +68,14 @@ chrome.storage.sync.get(null, function(items) {
         document.getElementById('pipPosition').value = items['pipPosition'];
     }
 
+    if (items['layoutMode']) {
+        document.getElementById('layoutMode').value = items['layoutMode'];
+    }
+
+    if (items['cameraSize']) {
+        document.getElementById('cameraSize').value = items['cameraSize'];
+    }
+
     // Default transcription to ON unless explicitly disabled.
     document.getElementById('enableTranscription').checked =
         (typeof items['enableTranscription'] === 'undefined') || items['enableTranscription'] === 'true';
@@ -332,6 +340,28 @@ document.getElementById('pipPosition').onchange = function() {
         pipPosition: this.value
     }, function() {
         document.getElementById('pipPosition').disabled = false;
+        hideSaving();
+    });
+};
+
+document.getElementById('layoutMode').onchange = function() {
+    this.disabled = true;
+    showSaving();
+    chrome.storage.sync.set({
+        layoutMode: this.value
+    }, function() {
+        document.getElementById('layoutMode').disabled = false;
+        hideSaving();
+    });
+};
+
+document.getElementById('cameraSize').onchange = function() {
+    this.disabled = true;
+    showSaving();
+    chrome.storage.sync.set({
+        cameraSize: this.value
+    }, function() {
+        document.getElementById('cameraSize').disabled = false;
         hideSaving();
     });
 };
