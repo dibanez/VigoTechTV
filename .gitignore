@@ -1,0 +1,10 @@
+# Packaged extension artifacts
+*.crx
+*.zip
+
+# Signing keys — NEVER commit the private key
+*.pem
+
+# OS / editor cruft
+.DS_Store
+*.log
