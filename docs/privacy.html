@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Política de privacidad — VigoTechTV</title>
+    <style>
+        :root { color-scheme: light dark; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 2rem 1.25rem 4rem;
+            color: #1a1a1a;
+            background: #fff;
+        }
+        h1 { font-size: 1.7rem; margin-bottom: 0.25rem; }
+        h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 1px solid #e5e5e5; padding-bottom: 0.25rem; }
+        h3 { font-size: 1rem; margin-top: 1.5rem; }
+        .updated { color: #666; font-size: 0.9rem; margin-top: 0; }
+        code { background: #f2f2f2; padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.9em; }
+        ul { padding-left: 1.25rem; }
+        a { color: #06c; }
+        .lang-sep { margin-top: 3rem; border: 0; border-top: 2px solid #ddd; }
+        @media (prefers-color-scheme: dark) {
+            body { color: #e6e6e6; background: #141414; }
+            h2 { border-color: #333; }
+            code { background: #262626; }
+            .updated { color: #999; }
+            a { color: #6cb6ff; }
+        }
+    </style>
+</head>
+<body>
+
+<h1>Política de privacidad — VigoTechTV</h1>
+<p class="updated">Última actualización: 30 de junio de 2026</p>
+
+<p>
+    VigoTechTV es una extensión de Chrome que graba reuniones y charlas capturando
+    pantalla, cámara y micrófono, y permite subir la grabación a YouTube y generar
+    transcripciones y resúmenes. Esta política explica qué datos se procesan y cómo.
+    En resumen: <strong>el procesamiento es local en tu equipo</strong> y no
+    disponemos de servidores propios que reciban tus datos.
+</p>
+
+<h2>1. Datos que se procesan</h2>
+<ul>
+    <li><strong>Vídeo y audio</strong> de la pantalla, la cámara y el micrófono que tú eliges capturar.</li>
+    <li><strong>Transcripciones y resúmenes</strong> generados a partir del audio grabado.</li>
+    <li><strong>Preferencias de configuración</strong> (resolución, códec, posición del logo, idioma, etc.) y, si lo añades, tu logotipo.</li>
+    <li><strong>Credenciales que tú introduces</strong>: el token OAuth de Google (para subir a YouTube) y, opcionalmente, tu propia clave de API de OpenAI.</li>
+</ul>
+
+<h2>2. Dónde se procesan y a dónde se envían</h2>
+<ul>
+    <li><strong>Grabación:</strong> se realiza y se almacena <strong>localmente</strong> en tu equipo. No se sube a ningún servidor por defecto.</li>
+    <li><strong>Transcripción y resumen:</strong> por defecto se ejecutan <strong>localmente</strong> en tu navegador (modelos de IA que se descargan una vez desde CDNs públicas: huggingface.co y cdn.jsdelivr.net). El audio no sale de tu equipo en este modo.</li>
+    <li><strong>OpenAI (opcional):</strong> solo si <em>tú</em> eliges el proveedor «OpenAI» e introduces tu propia clave de API, la transcripción/el texto se envía a la API de OpenAI (<code>api.openai.com</code>) para generar el resumen. Es opt-in; está desactivado por defecto.</li>
+    <li><strong>YouTube (opcional):</strong> solo cuando tú lo solicitas, la grabación se sube a tu cuenta de YouTube mediante la API oficial de Google (<code>googleapis.com</code>), usando la autorización OAuth que concedes.</li>
+</ul>
+
+<h2>3. Qué NO hacemos</h2>
+<ul>
+    <li>No tenemos servidores propios que reciban tus grabaciones, audio o datos personales.</li>
+    <li>No usamos analítica, seguimiento ni publicidad.</li>
+    <li>No vendemos ni compartimos tus datos con terceros.</li>
+    <li>No accedemos al contenido de las páginas web que visitas.</li>
+</ul>
+
+<h2>4. Almacenamiento</h2>
+<ul>
+    <li>Las <strong>preferencias</strong> se guardan con <code>chrome.storage</code> (sincronizadas con tu cuenta de Chrome) y el <strong>logotipo y la clave de API</strong> en el almacenamiento local del navegador.</li>
+    <li>La <strong>clave de API de OpenAI</strong> se guarda únicamente en el almacenamiento local de tu equipo y solo se usa para comunicarse con OpenAI cuando tú activas esa opción.</li>
+    <li>Las <strong>grabaciones</strong> quedan como archivos en tu equipo; tú decides conservarlas, borrarlas o subirlas.</li>
+</ul>
+
+<h2>5. Permisos y su finalidad</h2>
+<ul>
+    <li><code>tabCapture</code> / <code>activeTab</code> / <code>tabs</code>: capturar la pestaña que eliges grabar.</li>
+    <li><code>offscreen</code>: procesar la captura y la composición de vídeo en segundo plano.</li>
+    <li><code>identity</code>: autorización OAuth con Google para subir a YouTube.</li>
+    <li><code>storage</code>: guardar tus preferencias.</li>
+    <li>Acceso de host a <code>https://www.googleapis.com/*</code>: subir vídeos a YouTube.</li>
+</ul>
+
+<h2>6. Servicios de terceros</h2>
+<p>Cuando usas funciones opcionales, se aplican las políticas de privacidad de los proveedores correspondientes:</p>
+<ul>
+    <li>Google / YouTube — <a href="https://policies.google.com/privacy">policies.google.com/privacy</a></li>
+    <li>OpenAI (solo si activas ese proveedor) — <a href="https://openai.com/policies/privacy-policy">openai.com/policies/privacy-policy</a></li>
+</ul>
+
+<h2>7. Contacto</h2>
+<p>Para cualquier consulta sobre esta política: <a href="mailto:dibanez@gmail.com">dibanez@gmail.com</a></p>
+
+<hr class="lang-sep">
+
+<h1>Privacy Policy — VigoTechTV (English)</h1>
+<p class="updated">Last updated: June 30, 2026</p>
+
+<p>
+    VigoTechTV is a Chrome extension that records meetings and talks by capturing
+    screen, camera and microphone, and lets you upload the recording to YouTube and
+    generate transcripts and summaries. In short: <strong>processing happens locally
+    on your device</strong> and we operate no servers of our own that receive your data.
+</p>
+
+<h2>1. Data processed</h2>
+<ul>
+    <li><strong>Video and audio</strong> from the screen, camera and microphone you choose to capture.</li>
+    <li><strong>Transcripts and summaries</strong> generated from the recorded audio.</li>
+    <li><strong>Settings</strong> (resolution, codec, logo position, language, etc.) and, if you add one, your logo.</li>
+    <li><strong>Credentials you enter</strong>: the Google OAuth token (to upload to YouTube) and, optionally, your own OpenAI API key.</li>
+</ul>
+
+<h2>2. Where data is processed and where it goes</h2>
+<ul>
+    <li><strong>Recording:</strong> performed and stored <strong>locally</strong> on your device. Nothing is uploaded to any server by default.</li>
+    <li><strong>Transcription and summary:</strong> by default run <strong>locally</strong> in your browser (AI models downloaded once from public CDNs: huggingface.co and cdn.jsdelivr.net). Audio does not leave your device in this mode.</li>
+    <li><strong>OpenAI (optional):</strong> only if <em>you</em> select the "OpenAI" provider and enter your own API key is the transcript/text sent to the OpenAI API (<code>api.openai.com</code>) to generate the summary. It is opt-in and off by default.</li>
+    <li><strong>YouTube (optional):</strong> only when you request it, the recording is uploaded to your own YouTube account via Google's official API (<code>googleapis.com</code>) using the OAuth authorization you grant.</li>
+</ul>
+
+<h2>3. What we do NOT do</h2>
+<ul>
+    <li>We run no servers that receive your recordings, audio or personal data.</li>
+    <li>No analytics, tracking or advertising.</li>
+    <li>We do not sell or share your data with third parties.</li>
+    <li>We do not access the content of the web pages you visit.</li>
+</ul>
+
+<h2>4. Storage</h2>
+<ul>
+    <li><strong>Preferences</strong> are stored with <code>chrome.storage</code> (synced with your Chrome account); the <strong>logo and API key</strong> in the browser's local storage.</li>
+    <li>Your <strong>OpenAI API key</strong> is stored only in local storage on your device and used solely to talk to OpenAI when you enable that option.</li>
+    <li><strong>Recordings</strong> remain as files on your device; you decide whether to keep, delete or upload them.</li>
+</ul>
+
+<h2>5. Permissions and their purpose</h2>
+<ul>
+    <li><code>tabCapture</code> / <code>activeTab</code> / <code>tabs</code>: capture the tab you choose to record.</li>
+    <li><code>offscreen</code>: process capture and video composition in the background.</li>
+    <li><code>identity</code>: OAuth authorization with Google to upload to YouTube.</li>
+    <li><code>storage</code>: store your preferences.</li>
+    <li>Host access to <code>https://www.googleapis.com/*</code>: upload videos to YouTube.</li>
+</ul>
+
+<h2>6. Third-party services</h2>
+<p>When you use optional features, the respective providers' privacy policies apply:</p>
+<ul>
+    <li>Google / YouTube — <a href="https://policies.google.com/privacy">policies.google.com/privacy</a></li>
+    <li>OpenAI (only if you enable that provider) — <a href="https://openai.com/policies/privacy-policy">openai.com/policies/privacy-policy</a></li>
+</ul>
+
+<h2>7. Contact</h2>
+<p>For any questions about this policy: <a href="mailto:dibanez@gmail.com">dibanez@gmail.com</a></p>
+
+</body>
+</html>
