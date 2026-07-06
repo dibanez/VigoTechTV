@@ -4,6 +4,8 @@ Chrome extension for recording meetups with screen, camera and microphone. Suppo
 
 Built for [VigoTech](https://vigotech.org) community events.
 
+📦 **[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/oodlgfbojgcjfkaaahfneoihcmondpdi)**
+
 ## Features
 
 - **Screen capture** - Record any screen, window or Chrome tab
@@ -26,6 +28,12 @@ Built for [VigoTech](https://vigotech.org) community events.
 - Subtitles: internet access on first use to download the Whisper model (cached afterwards)
 
 ## Installation
+
+### From the Chrome Web Store (recommended)
+
+Install directly from the [Chrome Web Store](https://chromewebstore.google.com/detail/oodlgfbojgcjfkaaahfneoihcmondpdi).
+
+### From source (development)
 
 1. Clone or download this repository
 2. Open `chrome://extensions/` in Chrome
